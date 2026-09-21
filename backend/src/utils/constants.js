@@ -78,6 +78,7 @@ export const AUDIT_ACTIONS = Object.freeze({
   EMPLOYER_REJECTED: "EMPLOYER_REJECTED",
   USER_CREATED: "USER_CREATED",
   USER_STATUS_CHANGED: "USER_STATUS_CHANGED",
+  ACCESS_DENIED: "ACCESS_DENIED",
 });
 
 export const AUDIT_MODULES = Object.freeze({
@@ -87,6 +88,7 @@ export const AUDIT_MODULES = Object.freeze({
   EMPLOYERS: "employers",
   APPLICATIONS: "applications",
   DOCUMENTS: "documents",
+  SECURITY: "security",
 });
 
 export const UPLOAD_RULES = Object.freeze({
