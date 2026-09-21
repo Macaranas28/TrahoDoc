@@ -5,6 +5,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import healthRoutes from "./routes/health.routes.js";
+import { connectDB } from "./config/db.js";
 
 if (!process.env.CLIENT_URL) {
   throw new Error("CLIENT_URL is missing in backend/.env");
@@ -33,3 +34,21 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`TrahoDoc API running on http://localhost:${PORT}`);
 });
+
+app.listen(PORT, () => {
+  console.log(`TrahoDoc API running on http://localhost:${PORT}`);
+});
+
+const start = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`TrahoDoc API running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error.message);
+    process.exit(1);
+  }
+};
+
+start();
