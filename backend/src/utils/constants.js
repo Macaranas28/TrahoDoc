@@ -93,3 +93,11 @@ export const UPLOAD_RULES = Object.freeze({
   MAX_SIZE_BYTES: 5 * 1024 * 1024, // 5 MB
   ALLOWED_MIME_TYPES: ["application/pdf", "image/jpeg", "image/png"],
 });
+
+export const AUTH = Object.freeze({
+  BCRYPT_ROUNDS: 12,
+  MAX_FAILED_ATTEMPTS: 3,
+  LOCK_DURATION_MS: 5 * 60 * 1000, // 5 minutes
+  IDLE_TIMEOUT_MS: 15 * 60 * 1000, // 15 minutes
+  IDLE_TIMEOUT_SECONDS: 15 * 60,
+});
