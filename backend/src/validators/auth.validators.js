@@ -14,11 +14,15 @@ export const emailRule = body("email")
   .isLength({ max: 254 }).withMessage("Email is too long")
   .isEmail().withMessage("Enter a valid email address");
 
-export const passwordRule = body("password")
-  .isString().withMessage("Password must be text").bail()
-  .isLength({ min: 8, max: 64 }).withMessage("Password must be 8 to 64 characters").bail()
-  .isStrongPassword({ minLength: 8, minLowercase: 1, minUppercase: 1, minNumbers: 1, minSymbols: 0 })
-  .withMessage("Password needs an uppercase letter, a lowercase letter, and a number");
+// One rule builder, so every password field follows the same policy
+const strongPassword = (field) =>
+  body(field)
+    .isString().withMessage("Password must be text").bail()
+    .isLength({ min: 8, max: 64 }).withMessage("Password must be 8 to 64 characters").bail()
+    .isStrongPassword({ minLength: 8, minLowercase: 1, minUppercase: 1, minNumbers: 1, minSymbols: 0 })
+    .withMessage("Password needs an uppercase letter, a lowercase letter, and a number");
+
+export const passwordRule = strongPassword("password");
 
 export const registerRules = [
   nameRule,
@@ -38,4 +42,16 @@ export const loginRules = [
   body("password")
     .isString().withMessage("Password is required").bail()
     .isLength({ min: 1, max: 128 }).withMessage("Password is required"),
+];
+
+export const changePasswordRules = [
+  body("currentPassword")
+    .isString().withMessage("Current password is required").bail()
+    .isLength({ min: 1, max: 128 }).withMessage("Current password is required"),
+  strongPassword("newPassword")
+    .custom((value, { req }) => value !== req.body.currentPassword)
+    .withMessage("New password must be different from the current one"),
+  body("confirmNewPassword")
+    .custom((value, { req }) => value === req.body.newPassword)
+    .withMessage("Passwords do not match"),
 ];

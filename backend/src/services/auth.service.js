@@ -1,9 +1,16 @@
 import bcrypt from "bcrypt";
 import User from "../models/User.js";
 import ApiError from "../utils/ApiError.js";
-import { AUTH, AUDIT_ACTIONS, AUDIT_MODULES, USER_STATUS } from "../utils/constants.js";
+import {
+  AUTH,
+  AUDIT_ACTIONS,
+  AUDIT_MODULES,
+  NOTIFICATION_CATEGORIES,
+  USER_STATUS,
+} from "../utils/constants.js";
 import { signToken, verifyToken } from "../utils/token.js";
 import { logAction } from "./audit.service.js";
+import { notifyUser } from "./notification.service.js";
 
 const INVALID_LOGIN = "Invalid email or password";
 
@@ -123,4 +130,33 @@ export const logoutUser = async ({ token, req }) => {
   if (user) {
     await authLog(req, user, user.email, AUDIT_ACTIONS.LOGOUT, "success");
   }
+};
+
+export const updatePassword = async ({ userId, currentPassword, newPassword, req }) => {
+  const user = await User.findById(userId).select("+passwordHash");
+  if (!user) throw ApiError.unauthorized();
+
+  const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!ok) {
+    await authLog(req, user, user.email, AUDIT_ACTIONS.PASSWORD_CHANGED, "failure", "Wrong current password");
+    throw ApiError.badRequest("Current password is incorrect");
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, AUTH.BCRYPT_ROUNDS);
+
+  // tokenVersion + 1 signs out every other device that still holds an old token
+  const updated = await User.findByIdAndUpdate(
+    userId,
+    { $set: { passwordHash }, $inc: { tokenVersion: 1 } },
+    { new: true }
+  );
+
+  await authLog(req, updated, updated.email, AUDIT_ACTIONS.PASSWORD_CHANGED, "success");
+  await notifyUser({
+    userId,
+    category: NOTIFICATION_CATEGORIES.SYSTEM,
+    message: "Your password was changed. If this was not you, contact your administrator.",
+  });
+
+  return { token: signToken(updated) };
 };
