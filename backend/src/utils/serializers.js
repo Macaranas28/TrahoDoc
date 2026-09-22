@@ -48,3 +48,11 @@ export const toDocumentSummary = (d) => ({
   remarks: lastRemarks(d),
   uploadedAt: d.createdAt,
 });
+
+export const toEmployerApplicationView = (a) => ({
+  id: a._id.toString(),
+  status: a.status,
+  student: { name: a.studentId?.name, course: a.studentId?.studentProfile?.course },
+  employerResponse: a.employerResponse,
+  createdAt: a.createdAt,
+});

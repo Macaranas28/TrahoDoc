@@ -1,3 +1,5 @@
+import { listEmployerApplications, getEmployerApplication, respondToApplication } from "../services/application.service.js";
+import { toEmployerApplicationView } from "../utils/serializers.js";
 import {
   createDraftApplication,
   listMyApplications,
@@ -43,4 +45,25 @@ export const withdraw = async (req, res) => {
     req,
   });
   res.json({ success: true, message: "Application withdrawn", data: { application: toApplicationDetail(application) } });
+};
+
+export const listForEmployer = async (req, res) => {
+  const applications = await listEmployerApplications(req.user);
+  res.json({ success: true, data: { applications: applications.map(toEmployerApplicationView) } });
+};
+
+export const getOneForEmployer = async (req, res) => {
+  const application = await getEmployerApplication({ user: req.user, id: req.params.id });
+  res.json({ success: true, data: { application: toEmployerApplicationView(application) } });
+};
+
+export const employerRespond = async (req, res) => {
+  const application = await respondToApplication({
+    user: req.user,
+    id: req.params.id,
+    status: req.body.status,
+    remarks: req.body.remarks,
+    req,
+  });
+  res.json({ success: true, message: "Response recorded", data: { application: toEmployerApplicationView(application) } });
 };

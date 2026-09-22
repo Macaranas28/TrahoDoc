@@ -1,3 +1,4 @@
+import { requireEmployerRecord } from "./employer.service.js";  
 import Application from "../models/Application.js";
 import Employer from "../models/Employer.js";
 import Requirement from "../models/Requirement.js";
@@ -9,6 +10,7 @@ import {
   APPLICATION_STATUS,
   AUDIT_ACTIONS,
   AUDIT_MODULES,
+  EMPLOYER_RESPONSE,
   NOTIFICATION_CATEGORIES,
   REQUIREMENT_TARGET,
   STUDENT_CAN_SUBMIT_FROM,
@@ -146,5 +148,66 @@ export const withdrawMyApplication = async ({ user, id, remarks, req }) => {
   });
 
   await audit(req, user, AUDIT_ACTIONS.APPLICATION_WITHDRAWN, updated, "Application withdrawn by student");
+  return updated;
+};
+
+// Record-level check for employers (BOLA), mirroring findOwnedApplication for students
+const findEmployerApplication = async (employer, id) => {
+  const application = await Application.findById(id);
+  if (!application || !canViewApplication({ user: { role: "employer" }, application, employerId: employer._id })) {
+    throw ApiError.notFound("Application not found");
+  }
+  return application;
+};
+
+export const listEmployerApplications = async (user) => {
+  const employer = await requireEmployerRecord(user._id);
+  return Application.find({ employerId: employer._id })
+    .populate("studentId", "name studentProfile.course")
+    .sort({ createdAt: -1 });
+};
+
+export const getEmployerApplication = async ({ user, id }) => {
+  const employer = await requireEmployerRecord(user._id);
+  const application = await findEmployerApplication(employer, id);
+  return application.populate([
+    { path: "employerId", select: "companyName" },
+    { path: "studentId", select: "name studentProfile.course" },
+  ]);
+};
+
+export const respondToApplication = async ({ user, id, status, remarks, req }) => {
+  const employer = await requireEmployerRecord(user._id);
+  const application = await findEmployerApplication(employer, id);
+
+  if (application.status !== APPLICATION_STATUS.APPROVED) {
+    throw ApiError.conflict('Only an "Approved" application can receive a response');
+  }
+  if (application.employerResponse?.status !== EMPLOYER_RESPONSE.PENDING) {
+    throw ApiError.conflict("A response has already been recorded for this application");
+  }
+
+  const updated = await Application.findOneAndUpdate(
+    { _id: application._id, "employerResponse.status": EMPLOYER_RESPONSE.PENDING },
+    { $set: { employerResponse: { status, remarks, respondedAt: new Date() } } },
+    { new: true }
+  ).populate("studentId", "name");
+  if (!updated) throw ApiError.conflict("The application was just changed. Please refresh and try again");
+
+  await logAction({
+    req,
+    userId: user._id,
+    actorEmail: user.email,
+    action: AUDIT_ACTIONS.APPLICATION_EMPLOYER_RESPONSE,
+    module: AUDIT_MODULES.APPLICATIONS,
+    targetId: updated._id,
+    details: `Employer responded: ${status}`,
+  });
+  await notifyUser({
+    userId: updated.studentId._id,
+    category: NOTIFICATION_CATEGORIES.APPLICATION,
+    message: `${employer.companyName} has ${status.toLowerCase()} your application.`,
+    link: "/student/tracking",
+  });
   return updated;
 };
