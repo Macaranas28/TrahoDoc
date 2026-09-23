@@ -20,9 +20,10 @@ export function AuthProvider({ children }) {
     refreshUser().finally(() => setLoading(false));
   }, [refreshUser]);
 
-  const login = async (email, password) => {
+    const login = async (email, password) => {
     const res = await loginRequest({ email, password });
     setUser(res.data.data.user);
+    return res.data.data.user;
   };
 
   const logout = async () => {

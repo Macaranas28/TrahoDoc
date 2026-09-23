@@ -14,8 +14,14 @@ export default function Login() {
   const onSubmit = async (data) => {
     setServerError("");
     try {
-      await login(data.email, data.password);
-      navigate(location.state?.from || "/student", { replace: true });
+           const loggedInUser = await login(data.email, data.password);
+      const homeByRole = {
+        student: "/student",
+        employer: "/employer",
+        coordinator: "/coordinator",
+        admin: "/admin",
+      };
+      navigate(location.state?.from || homeByRole[loggedInUser.role] || "/login", { replace: true });
     } catch (err) {
       setServerError(err.response?.data?.message || "Login failed. Please try again.");
     }
