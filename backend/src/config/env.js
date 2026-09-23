@@ -1,6 +1,9 @@
 import "dotenv/config";
 
-const required = ["MONGODB_URI", "CLIENT_URL", "JWT_SECRET"];
+const required = [
+  "MONGODB_URI", "CLIENT_URL", "JWT_SECRET",
+  "CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET",
+];
 const missing = required.filter((key) => !process.env[key]);
 
 if (missing.length > 0) {
@@ -19,4 +22,9 @@ export const env = Object.freeze({
   clientUrl: process.env.CLIENT_URL,
   mongoUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET,
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    apiSecret: process.env.CLOUDINARY_API_SECRET,
+  },
 });
