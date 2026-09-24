@@ -185,12 +185,21 @@ export const reviewDocument = async ({ user, documentId, status, remarks, req })
     targetId: document._id, details: remarks,
   });
 
+  const notifyLink = document.applicationId ? "/student/tracking" : "/employer/accreditation";
+
   if (status === DOCUMENT_STATUS.REJECTED) {
     await notifyUser({
       userId: document.ownerId,
       category: NOTIFICATION_CATEGORIES.DOCUMENT,
       message: `Your document "${document.documentType}" was rejected: ${remarks}`,
-      link: document.applicationId ? "/student/tracking" : "/employer/accreditation",
+      link: notifyLink,
+    });
+  } else if (status === DOCUMENT_STATUS.VERIFIED) {
+    await notifyUser({
+      userId: document.ownerId,
+      category: NOTIFICATION_CATEGORIES.DOCUMENT,
+      message: `Your document "${document.documentType}" was verified.`,
+      link: notifyLink,
     });
   }
 
