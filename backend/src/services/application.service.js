@@ -10,15 +10,19 @@ import {
   APPLICATION_STATUS,
   AUDIT_ACTIONS,
   AUDIT_MODULES,
+  DOCUMENT_STATUS,
   EMPLOYER_RESPONSE,
   NOTIFICATION_CATEGORIES,
   REQUIREMENT_TARGET,
+  ROLES,
   STUDENT_CAN_SUBMIT_FROM,
   STUDENT_CAN_WITHDRAW_FROM,
 } from "../utils/constants.js";
 import { logAction } from "./audit.service.js";
 import { notifyUser } from "./notification.service.js";
 import { isProfileComplete } from "./student.service.js";
+import { DOCUMENT_STATUS } from "../utils/constants.js"; // add to the existing constants import instead — see note
+import Document from "../models/Document.js";
 
 const DETAIL_POPULATE = [
   { path: "employerId", select: "companyName" },
@@ -211,3 +215,74 @@ export const respondToApplication = async ({ user, id, status, remarks, req }) =
   });
   return updated;
 };
+
+// Coordinator's own list — only applications assigned to them
+export const listCoordinatorApplications = (user) =>
+  Application.find({ assignedCoordinatorId: user._id })
+    .populate("employerId", "companyName")
+    .populate("studentId", "name studentProfile.course")
+    .sort({ createdAt: -1 });
+
+const findAssignedApplication = async (user, id) => {
+  const application = await Application.findById(id);
+  if (!application || !isSameId(application.assignedCoordinatorId, user._id)) {
+    throw ApiError.notFound("Application not found");
+  }
+  return application;
+};
+
+export const getCoordinatorApplication = async ({ user, id }) => {
+  const application = await findAssignedApplication(user, id);
+  await markUnderReviewIfNeeded(application);
+  return application.populate([
+    { path: "employerId", select: "companyName" },
+    { path: "studentId", select: "name studentProfile" },
+    { path: "requiredDocuments.documentId", select: "originalFileName verificationStatus verifiedAt verificationHistory" },
+  ]);
+};
+
+export const changeApplicationStatus = async ({ user, id, status, remarks, req }) => {
+  const application = await findAssignedApplication(user, id);
+
+  if (![APPLICATION_STATUS.SUBMITTED, APPLICATION_STATUS.UNDER_REVIEW].includes(application.status)) {
+    throw ApiError.conflict(`An application that is "${application.status}" cannot be changed this way`);
+  }
+
+  if (status === APPLICATION_STATUS.APPROVED) {
+    const docs = await Document.find({ applicationId: application._id });
+    const allVerified = application.requiredDocuments.every((item) => {
+      const doc = docs.find((d) => d._id.toString() === item.documentId?.toString());
+      return doc && doc.verificationStatus === DOCUMENT_STATUS.VERIFIED;
+    });
+    if (!allVerified) {
+      throw ApiError.badRequest("All required documents must be Verified before approving this application");
+    }
+  }
+
+  application.status = status;
+  application.statusHistory.push({ status, remarks, changedBy: user._id });
+  await application.save();
+
+  await logAction({
+    req, userId: user._id, actorEmail: user.email,
+    action: AUDIT_ACTIONS.APPLICATION_STATUS_CHANGED, module: AUDIT_MODULES.APPLICATIONS,
+    targetId: application._id, details: `Status changed to ${status}`,
+  });
+  await notifyUser({
+    userId: application.studentId,
+    category: NOTIFICATION_CATEGORIES.APPLICATION,
+    message: `Your application status changed to "${status}".${remarks ? ` Remarks: ${remarks}` : ""}`,
+    link: "/student/tracking",
+  });
+  return application;
+};
+
+// Also move an application to "Under Review" the first time a coordinator opens it (Submitted -> Under Review)
+export const markUnderReviewIfNeeded = async (application) => {
+  if (application.status === APPLICATION_STATUS.SUBMITTED) {
+    application.status = APPLICATION_STATUS.UNDER_REVIEW;
+    application.statusHistory.push({ status: APPLICATION_STATUS.UNDER_REVIEW });
+    await application.save();
+  }
+  return application;
+};F

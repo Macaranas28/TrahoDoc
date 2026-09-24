@@ -56,3 +56,15 @@ export const toEmployerApplicationView = (a) => ({
   employerResponse: a.employerResponse,
   createdAt: a.createdAt,
 });
+
+export const toDocumentDetail = (d) => ({
+  id: d._id.toString(),
+  documentType: d.documentType,
+  fileName: d.originalFileName,
+  fileUrl: d.fileUrl, // coordinators are trusted to view the actual file
+  status: d.verificationStatus,
+  verifiedBy: d.verifiedBy?.name,
+  verifiedAt: d.verifiedAt,
+  lastIntegrityCheck: d.lastIntegrityCheck,
+  history: d.verificationHistory.map((h) => ({ status: h.status, remarks: h.remarks, changedAt: h.actionAt })),
+});

@@ -21,3 +21,12 @@ export const getUsers = async (req, res) => {
 
   res.json({ success: true, data: { users: users.map(adminView), page, limit, total } });
 };
+
+import { assignCoordinator } from "../services/user.service.js";
+
+export const assignApplicationCoordinator = async (req, res) => {
+  const application = await assignCoordinator({
+    applicationId: req.params.id, coordinatorId: req.body.coordinatorId, admin: req.user, req,
+  });
+  res.json({ success: true, message: "Coordinator assigned", data: { applicationId: application._id, assignedCoordinatorId: application.assignedCoordinatorId } });
+};

@@ -8,6 +8,7 @@ import {
   withdrawMyApplication,
 } from "../services/application.service.js";
 import { toApplicationSummary, toApplicationDetail } from "../utils/serializers.js";
+import { listCoordinatorApplications, getCoordinatorApplication, changeApplicationStatus } from "../services/application.service.js";
 
 export const createApplication = async (req, res) => {
   const application = await createDraftApplication({
@@ -66,4 +67,32 @@ export const employerRespond = async (req, res) => {
     req,
   });
   res.json({ success: true, message: "Response recorded", data: { application: toEmployerApplicationView(application) } });
+};
+
+export const listForCoordinator = async (req, res) => {
+  const applications = await listCoordinatorApplications(req.user);
+  res.json({
+    success: true,
+    data: {
+      applications: applications.map((a) => ({
+        id: a._id.toString(),
+        status: a.status,
+        employer: { companyName: a.employerId?.companyName },
+        student: { name: a.studentId?.name, course: a.studentId?.studentProfile?.course },
+        createdAt: a.createdAt,
+      })),
+    },
+  });
+};
+
+export const getOneForCoordinator = async (req, res) => {
+  const application = await getCoordinatorApplication({ user: req.user, id: req.params.id });
+  res.json({ success: true, data: { application: toApplicationDetail(application) } }); // reuse existing serializer
+};
+
+export const changeStatus = async (req, res) => {
+  const application = await changeApplicationStatus({
+    user: req.user, id: req.params.id, status: req.body.status, remarks: req.body.remarks, req,
+  });
+  res.json({ success: true, message: "Status updated", data: { application: { id: application._id, status: application.status } } });
 };

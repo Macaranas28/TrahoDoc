@@ -16,6 +16,8 @@ import {
 } from "../utils/constants.js";
 import { logAction } from "./audit.service.js";
 import { notifyUser } from "./notification.service.js";
+import { checkDocumentIntegrity } from "./integrity.service.js";
+import { canViewDocument } from "../utils/access.js";
 
 // Never sends the file link or hash here. Secure file access comes with signed URLs, added below.
 export const listMyDocuments = (userId) =>
@@ -139,4 +141,58 @@ export const replaceDocument = async ({ user, documentId, file, req }) => {
     targetId: existing._id, details: "Document replaced",
   });
   return existing;
+};
+
+// Opens a document for coordinator review: runs the integrity check first, every time.
+export const openDocumentForReview = async ({ user, documentId, req }) => {
+  const document = await Document.findById(documentId);
+  const application = document?.applicationId ? await Application.findById(document.applicationId) : null;
+  if (!document || !canViewDocument({ user, document, application })) {
+    throw ApiError.notFound("Document not found");
+  }
+
+  const { matched } = await checkDocumentIntegrity({ user, documentId, req });
+  const refreshed = await Document.findById(documentId).populate("verifiedBy", "name");
+  return { document: refreshed, integrityMatched: matched };
+};
+
+export const reviewDocument = async ({ user, documentId, status, remarks, req }) => {
+  const document = await Document.findById(documentId);
+  const application = document?.applicationId ? await Application.findById(document.applicationId) : null;
+  if (!document || !canViewDocument({ user, document, application })) {
+    throw ApiError.notFound("Document not found");
+  }
+
+  if (status === DOCUMENT_STATUS.VERIFIED && document.verificationStatus === DOCUMENT_STATUS.POSSIBLE_MODIFICATION) {
+    throw ApiError.conflict(
+      "This document was flagged by an integrity check and cannot be verified directly. Reject it and ask for a re-upload, or investigate further."
+    );
+  }
+  if (document.verificationStatus === status) {
+    throw ApiError.conflict(`Document is already ${status}`);
+  }
+
+  document.verificationStatus = status;
+  document.verifiedBy = user._id;
+  document.verifiedAt = new Date();
+  document.verificationHistory.push({ status, remarks, actionBy: user._id });
+  await document.save();
+
+  const actionMap = { [DOCUMENT_STATUS.VERIFIED]: AUDIT_ACTIONS.DOCUMENT_VERIFIED, [DOCUMENT_STATUS.REJECTED]: AUDIT_ACTIONS.DOCUMENT_REJECTED };
+  await logAction({
+    req, userId: user._id, actorEmail: user.email,
+    action: actionMap[status], module: AUDIT_MODULES.DOCUMENTS,
+    targetId: document._id, details: remarks,
+  });
+
+  if (status === DOCUMENT_STATUS.REJECTED) {
+    await notifyUser({
+      userId: document.ownerId,
+      category: NOTIFICATION_CATEGORIES.DOCUMENT,
+      message: `Your document "${document.documentType}" was rejected: ${remarks}`,
+      link: document.applicationId ? "/student/tracking" : "/employer/accreditation",
+    });
+  }
+
+  return document;
 };

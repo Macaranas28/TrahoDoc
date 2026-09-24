@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import ApiError from "../utils/ApiError.js";
 import { AUTH, AUDIT_ACTIONS, AUDIT_MODULES } from "../utils/constants.js";
 import { logAction } from "./audit.service.js";
+import Application from "../models/Application.js";
 
 export const createUserByAdmin = async ({ name, email, password, role, admin, req }) => {
   if (await User.exists({ email })) {
@@ -31,4 +32,23 @@ export const listUsers = async ({ role, page, limit }) => {
     User.countDocuments(filter),
   ]);
   return { users, total };
+};
+
+export const assignCoordinator = async ({ applicationId, coordinatorId, admin, req }) => {
+  const coordinator = await User.findOne({ _id: coordinatorId, role: "coordinator" });
+  if (!coordinator) throw ApiError.badRequest("That user is not a coordinator");
+
+  const application = await Application.findByIdAndUpdate(
+    applicationId,
+    { $set: { assignedCoordinatorId: coordinatorId } },
+    { new: true }
+  );
+  if (!application) throw ApiError.notFound("Application not found");
+
+  await logAction({
+    req, userId: admin._id, actorEmail: admin.email,
+    action: AUDIT_ACTIONS.APPLICATION_ASSIGNED, module: AUDIT_MODULES.APPLICATIONS,
+    targetId: application._id, details: `Assigned to coordinator ${coordinator.email}`,
+  });
+  return application;
 };
