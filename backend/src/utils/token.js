@@ -25,3 +25,16 @@ export const setAuthCookie = (res, token) =>
   res.cookie(COOKIE_NAME, token, { ...baseCookieOptions(), maxAge: AUTH.IDLE_TIMEOUT_MS });
 
 export const clearAuthCookie = (res) => res.clearCookie(COOKIE_NAME, baseCookieOptions());
+
+// A separate, narrow-purpose token: it can ONLY be used to complete MFA login, nothing else.
+export const signMfaPendingToken = (user) =>
+  jwt.sign({ sub: user._id.toString(), tv: user.tokenVersion, purpose: "mfa_pending" }, env.jwtSecret, {
+    algorithm: "HS256",
+    expiresIn: MFA.PENDING_TOKEN_TTL_SECONDS,
+  });
+
+export const verifyMfaPendingToken = (token) => {
+  const payload = verifyToken(token);
+  if (payload.purpose !== "mfa_pending") throw new Error("Invalid token purpose");
+  return payload;
+};

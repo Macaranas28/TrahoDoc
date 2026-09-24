@@ -20,10 +20,18 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
-  const { user, token } = await loginUser({ email, password, req });
+  const result = await loginUser({ email, password, req });
 
-  setAuthCookie(res, token);
-  res.json({ success: true, message: "Login successful", data: { user: toPublicUser(user) } });
+  if (result.mfaRequired) {
+    return res.json({
+      success: true,
+      message: "MFA verification required",
+      data: { mfaRequired: true, mfaToken: result.mfaToken },
+    });
+  }
+
+  setAuthCookie(res, result.token);
+  res.json({ success: true, message: "Login successful", data: { mfaRequired: false, user: toPublicUser(result.user) } });
 };
 
 export const logout = async (req, res) => {

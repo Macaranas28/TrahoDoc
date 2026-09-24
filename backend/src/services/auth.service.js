@@ -11,6 +11,7 @@ import {
 import { signToken, verifyToken } from "../utils/token.js";
 import { logAction } from "./audit.service.js";
 import { notifyUser } from "./notification.service.js";
+import { signMfaPendingToken } from "../utils/token.js";
 
 const INVALID_LOGIN = "Invalid email or password";
 
@@ -107,9 +108,11 @@ export const loginUser = async ({ email, password, req }) => {
   );
   await authLog(req, user, email, AUDIT_ACTIONS.LOGIN_SUCCESS, "success");
 
-  // MFA check will be added here in Phase 16
+  if (user.mfaEnabled) {
+    return { user, mfaRequired: true, mfaToken: signMfaPendingToken(user) };
+  }
 
-  return { user, token: signToken(user) };
+  return { user, mfaRequired: false, token: signToken(user) };
 };
 
 export const logoutUser = async ({ token, req }) => {
