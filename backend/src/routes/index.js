@@ -9,6 +9,9 @@ import employerRoutes from "./employer.routes.js";
 import applicationRoutes from "./application.routes.js";
 import documentRoutes from "./document.routes.js";
 import auditLogRoutes from "./auditLog.routes.js";
+import dashboardRoutes from "./dashboard.routes.js";
+// ...
+router.use("/dashboard", dashboardRoutes);
 // ...
 router.use("/audit-logs", auditLogRoutes);
 

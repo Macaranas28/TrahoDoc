@@ -14,6 +14,8 @@ import EmployerProfile from "./pages/employer/CompanyProfile.jsx";
 import EmployerAccreditation from "./pages/employer/Accreditation.jsx";
 import EmployerApplications from "./pages/employer/Applications.jsx";
 import { ROLES } from "./utils/constants.js";
+import CoordinatorDashboard from "./pages/coordinator/Dashboard.jsx";
+import AdminDashboard from "./pages/admin/Dashboard.jsx";
 
 function Forbidden() { return <h1>403 – You don't have access to this page</h1>; }
 function NotFound() { return <h1>404 – Page not found</h1>; }
@@ -45,6 +47,18 @@ export default function App() {
           </Route>
         </Route>
       </Route>
+
+        <Route element={<RoleRoute allow={[ROLES.COORDINATOR]} />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/coordinator" element={<CoordinatorDashboard />} />
+          </Route>
+        </Route>
+
+        <Route element={<RoleRoute allow={[ROLES.ADMIN]} />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+          </Route>
+        </Route>
 
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<NotFound />} />
