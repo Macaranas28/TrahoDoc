@@ -1,8 +1,12 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar.jsx";
 import Topbar from "./Topbar.jsx";
+import IdleWarning from "./IdleWarning.jsx";
+import { useIdleTimer } from "../../hooks/useIdleTimer.js";
 
 export default function DashboardLayout() {
+  const { showWarning, dismissWarning } = useIdleTimer(true);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <Topbar />
@@ -12,6 +16,7 @@ export default function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+      <IdleWarning show={showWarning} onDismiss={dismissWarning} />
     </div>
   );
 }
