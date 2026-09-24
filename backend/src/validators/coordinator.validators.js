@@ -1,5 +1,6 @@
 import { body } from "express-validator";
 import { DOCUMENT_STATUS, APPLICATION_STATUS } from "../utils/constants.js";
+import { ACCREDITATION_STATUS, RISK_FLAG_STATUS } from "../utils/constants.js"; // merge into existing import
 
 export const reviewDocumentRules = [
   body("status")
@@ -30,4 +31,24 @@ export const assignCoordinatorRules = [
   body("coordinatorId")
     .isString().withMessage("coordinatorId must be text").bail()
     .isMongoId().withMessage("Invalid coordinator ID"),
+];
+
+export const accreditationDecisionRules = [
+  body("status")
+    .isString().withMessage("Status must be text").bail()
+    .isIn([ACCREDITATION_STATUS.ACCREDITED, ACCREDITATION_STATUS.REJECTED]).withMessage("Status must be Accredited or Rejected"),
+  body("remarks")
+    .if(body("status").equals(ACCREDITATION_STATUS.REJECTED))
+    .notEmpty().withMessage("Remarks are required when rejecting")
+    .bail().isString().trim().isLength({ max: 500 }),
+  body("remarks").optional().isString().trim().isLength({ max: 500 }),
+];
+
+export const riskFlagReviewRules = [
+  body("status")
+    .isString().withMessage("Status must be text").bail()
+    .isIn([RISK_FLAG_STATUS.DISMISSED, RISK_FLAG_STATUS.CONFIRMED]).withMessage("Status must be Dismissed or Confirmed"),
+  body("reviewNote")
+    .isString().withMessage("A reason is required").bail()
+    .trim().isLength({ min: 3, max: 500 }).withMessage("Reason must be 3 to 500 characters"),
 ];
