@@ -52,3 +52,23 @@ export const assignCoordinator = async ({ applicationId, coordinatorId, admin, r
   });
   return application;
 };
+
+export const changeUserStatus = async ({ targetUserId, status, admin, req }) => {
+  if (targetUserId === admin._id.toString()) {
+    throw ApiError.badRequest("You cannot change your own account status");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    targetUserId,
+    { $set: { status }, $inc: { tokenVersion: 1 } }, // sign them out everywhere if disabling
+    { new: true }
+  );
+  if (!user) throw ApiError.notFound("User not found");
+
+  await logAction({
+    req, userId: admin._id, actorEmail: admin.email,
+    action: AUDIT_ACTIONS.USER_STATUS_CHANGED, module: AUDIT_MODULES.USERS,
+    targetId: user._id, details: `Status changed to ${status}`,
+  });
+  return user;
+};

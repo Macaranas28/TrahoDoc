@@ -30,3 +30,10 @@ export const assignApplicationCoordinator = async (req, res) => {
   });
   res.json({ success: true, message: "Coordinator assigned", data: { applicationId: application._id, assignedCoordinatorId: application.assignedCoordinatorId } });
 };
+
+import { changeUserStatus } from "../services/user.service.js";
+
+export const updateUserStatus = async (req, res) => {
+  const user = await changeUserStatus({ targetUserId: req.params.id, status: req.body.status, admin: req.user, req });
+  res.json({ success: true, message: "User status updated", data: { userId: user._id, status: user.status } });
+};

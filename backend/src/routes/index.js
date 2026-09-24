@@ -8,6 +8,9 @@ import requirementRoutes from "./requirement.routes.js";
 import employerRoutes from "./employer.routes.js";
 import applicationRoutes from "./application.routes.js";
 import documentRoutes from "./document.routes.js";
+import auditLogRoutes from "./auditLog.routes.js";
+// ...
+router.use("/audit-logs", auditLogRoutes);
 
 const router = Router();
 

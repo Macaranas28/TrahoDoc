@@ -19,3 +19,9 @@ export const listUsersRules = [
   query("page").optional().isInt({ min: 1, max: 10000 }).withMessage("page must be a positive whole number"),
   query("limit").optional().isInt({ min: 1, max: 100 }).withMessage("limit must be between 1 and 100"),
 ];
+
+export const changeUserStatusRules = [
+  body("status")
+    .isString().withMessage("Status must be text").bail()
+    .isIn(["active", "disabled"]).withMessage("Status must be active or disabled"),
+];

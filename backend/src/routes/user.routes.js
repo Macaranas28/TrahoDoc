@@ -8,6 +8,11 @@ import { ROLES } from "../utils/constants.js";
 import { assignApplicationCoordinator } from "../controllers/user.controller.js";
 import { assignCoordinatorRules } from "../validators/coordinator.validators.js";
 import { idParam } from "../validators/common.validators.js";
+import { updateUserStatus } from "../controllers/user.controller.js";
+import { changeUserStatusRules } from "../validators/user.validators.js";
+
+// add alongside the other routes:
+router.patch("/:id/status", idParam, changeUserStatusRules, validate, updateUserStatus);
 
 // add below the existing routes, still inside the Admin-only router:
 router.patch("/applications/:id/assign", idParam, assignCoordinatorRules, validate, assignApplicationCoordinator);
