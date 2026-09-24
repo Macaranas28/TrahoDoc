@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getMyDocuments, upload, replace } from "../controllers/document.controller.js";
+import { getMyDocuments, upload, replace, verifyIntegrity } from "../controllers/document.controller.js";
 import { uploadDocumentRules, requireValidFile } from "../validators/document.validators.js";
 import { idParam } from "../validators/common.validators.js";
 import { validate } from "../middleware/validate.js";
@@ -35,6 +35,14 @@ router.put(
   handleUploadErrors,
   requireValidFile,
   replace
+);
+
+router.post(
+  "/:id/verify-integrity",
+  requireRole(ROLES.COORDINATOR),
+  idParam,
+  validate,
+  verifyIntegrity
 );
 
 export default router;

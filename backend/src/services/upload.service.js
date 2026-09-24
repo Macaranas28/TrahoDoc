@@ -40,3 +40,18 @@ export const assertValidUpload = (file) => {
     throw ApiError.badRequest("The file's content does not match its claimed type");
   }
 };
+
+// Cloudinary files were uploaded with type:"authenticated", so the stored URL alone
+// can't be downloaded — it needs a signed, time-limited URL generated on demand.
+export const generateAuthenticatedUrl = (publicId, resourceType) =>
+  cloudinary.utils.private_download_url(publicId, undefined, {
+    resource_type: resourceType,
+    type: "authenticated",
+    expires_at: Math.floor(Date.now() / 1000) + 300, // 5 minutes
+  });
+
+export const downloadFileBuffer = async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Download failed with status ${response.status}`);
+  return Buffer.from(await response.arrayBuffer());
+};
