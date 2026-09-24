@@ -13,7 +13,7 @@ const studentOrEmployer = requireRole(ROLES.STUDENT, ROLES.EMPLOYER);
 
 router.use(authenticate); // every route below needs a login AND its own role guard
 
-router.get("/mine", requireRole(ROLES.STUDENT), getMyDocuments);
+router.get("/mine", requireRole(ROLES.STUDENT, ROLES.EMPLOYER), getMyDocuments);
 
 router.post(
   "/",

@@ -73,7 +73,9 @@ export default function Application() {
               <Button onClick={handleSubmit}>Submit</Button>
             )}
             <Button variant="danger" onClick={handleWithdraw}>Withdraw</Button>
-            <Button variant="secondary" onClick={() => navigate("/student/tracking")}>View Tracking</Button>
+                        <Button variant="secondary" onClick={() => navigate("/student/tracking")}>
+              {["Draft", "Needs Revision"].includes(current.status) ? "Upload Documents" : "View Tracking"}
+            </Button>
           </div>
         </div>
       ) : employers.length === 0 ? (
