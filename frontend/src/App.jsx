@@ -16,6 +16,11 @@ import EmployerApplications from "./pages/employer/Applications.jsx";
 import { ROLES } from "./utils/constants.js";
 import CoordinatorDashboard from "./pages/coordinator/Dashboard.jsx";
 import AdminDashboard from "./pages/admin/Dashboard.jsx";
+import CoordinatorApplications from "./pages/coordinator/Applications.jsx";
+import CoordinatorApplicationDetail from "./pages/coordinator/ApplicationDetail.jsx";
+import CoordinatorDocumentVerification from "./pages/coordinator/DocumentVerification.jsx";
+import CoordinatorEmployerVetting from "./pages/coordinator/EmployerVetting.jsx";
+import CoordinatorEmployerDetail from "./pages/coordinator/EmployerDetail.jsx";
 
 function Forbidden() { return <h1>403 – You don't have access to this page</h1>; }
 function NotFound() { return <h1>404 – Page not found</h1>; }
@@ -51,6 +56,11 @@ export default function App() {
         <Route element={<RoleRoute allow={[ROLES.COORDINATOR]} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/coordinator" element={<CoordinatorDashboard />} />
+                        <Route path="/coordinator/applications" element={<CoordinatorApplications />} />
+            <Route path="/coordinator/applications/:id" element={<CoordinatorApplicationDetail />} />
+            <Route path="/coordinator/documents" element={<CoordinatorDocumentVerification />} />
+            <Route path="/coordinator/employers" element={<CoordinatorEmployerVetting />} />
+            <Route path="/coordinator/employers/:id" element={<CoordinatorEmployerDetail />} />
           </Route>
         </Route>
 

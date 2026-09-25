@@ -23,6 +23,12 @@ const LINKS_BY_ROLE = {
   [ROLES.ADMIN]: [
     { to: "/admin", label: "Dashboard", end: true },
   ],
+    [ROLES.COORDINATOR]: [
+    { to: "/coordinator", label: "Dashboard", end: true },
+    { to: "/coordinator/applications", label: "Student Applications" },
+    { to: "/coordinator/documents", label: "Document Verification" },
+    { to: "/coordinator/employers", label: "Employer Vetting" },
+  ],
 };
 
 export default function Sidebar() {

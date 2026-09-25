@@ -9,3 +9,6 @@ export const getEmployerApplications = () => api.get("/applications");
 export const getEmployerApplication = (id) => api.get(`/applications/${id}`);
 export const respondToApplication = (id, status, remarks) =>
   api.patch(`/applications/${id}/employer-response`, { status, remarks });
+export const getCoordinatorApplications = () => api.get("/applications");
+export const getCoordinatorApplication = (id) => api.get(`/applications/${id}`);
+export const changeApplicationStatus = (id, status, remarks) => api.patch(`/applications/${id}/status`, { status, remarks });

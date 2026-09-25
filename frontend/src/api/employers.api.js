@@ -10,3 +10,8 @@ export const uploadEmployerDocument = ({ file, requirementId }) => {
   formData.append("requirementId", requirementId);
   return api.post("/documents", formData);
 };
+export const getCoordinatorEmployers = (status) => api.get("/employers", { params: status ? { status } : {} });
+export const getEmployerDetail = (id) => api.get(`/employers/${id}`);
+export const decideEmployerAccreditation = (id, status, remarks) => api.patch(`/employers/${id}/accreditation`, { status, remarks });
+export const reviewRiskFlag = (employerId, flagId, status, reviewNote) =>
+  api.patch(`/employers/${employerId}/risk-flags/${flagId}`, { status, reviewNote });

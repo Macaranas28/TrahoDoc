@@ -17,3 +17,7 @@ export const replaceDocument = (documentId, file) => {
   formData.append("file", file);
   return api.put(`/documents/${documentId}`, formData);
 };
+
+export const openDocumentForReview = (id) => api.get(`/documents/${id}/review`);
+export const reviewDocument = (id, status, remarks) => api.patch(`/documents/${id}/review`, { status, remarks });
+export const verifyDocumentIntegrity = (id) => api.post(`/documents/${id}/verify-integrity`);
