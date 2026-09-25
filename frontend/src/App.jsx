@@ -21,6 +21,8 @@ import CoordinatorApplicationDetail from "./pages/coordinator/ApplicationDetail.
 import CoordinatorDocumentVerification from "./pages/coordinator/DocumentVerification.jsx";
 import CoordinatorEmployerVetting from "./pages/coordinator/EmployerVetting.jsx";
 import CoordinatorEmployerDetail from "./pages/coordinator/EmployerDetail.jsx";
+import AdminUsers from "./pages/admin/Users.jsx";
+import AdminAuditLogs from "./pages/admin/AuditLogs.jsx";
 
 function Forbidden() { return <h1>403 – You don't have access to this page</h1>; }
 function NotFound() { return <h1>404 – Page not found</h1>; }
@@ -67,6 +69,8 @@ export default function App() {
         <Route element={<RoleRoute allow={[ROLES.ADMIN]} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
           </Route>
         </Route>
 

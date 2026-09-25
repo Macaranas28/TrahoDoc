@@ -1,5 +1,5 @@
-export default function Button({ children, variant = "primary", ...props }) {
-  const styles = {
+export default function Button({ children, variant = "primary", style, ...props }) {
+  const variants = {
     primary: { background: "#1d4ed8", color: "#fff" },
     danger: { background: "#dc2626", color: "#fff" },
     secondary: { background: "#e5e7eb", color: "#111" },
@@ -13,7 +13,8 @@ export default function Button({ children, variant = "primary", ...props }) {
         borderRadius: 6,
         cursor: props.disabled ? "not-allowed" : "pointer",
         opacity: props.disabled ? 0.6 : 1,
-        ...styles[variant],
+        ...variants[variant],
+        ...style, // allow callers to add/override specific properties, like marginRight above
       }}
     >
       {children}

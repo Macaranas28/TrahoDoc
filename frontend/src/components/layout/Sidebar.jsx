@@ -17,8 +17,10 @@ const LINKS_BY_ROLE = {
     { to: "/employer/accreditation", label: "Accreditation" },
     { to: "/employer/applications", label: "Applications" },
   ],
-  [ROLES.COORDINATOR]: [
-    { to: "/coordinator", label: "Dashboard", end: true },
+    [ROLES.ADMIN]: [
+    { to: "/admin", label: "Dashboard", end: true },
+    { to: "/admin/users", label: "User Management" },
+    { to: "/admin/audit-logs", label: "Audit Logs" },
   ],
   [ROLES.ADMIN]: [
     { to: "/admin", label: "Dashboard", end: true },
