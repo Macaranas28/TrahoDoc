@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { FileText } from "lucide-react";
 import { getCoordinatorApplications } from "../../api/applications.api.js";
-import StatusBadge from "../../components/common/StatusBadge.jsx";
-import Spinner from "../../components/common/Spinner.jsx";
-import EmptyState from "../../components/common/EmptyState.jsx";
+import PageHeader from "../../components/ui/PageHeader.jsx";
+import { Card } from "../../components/ui/Card.jsx";
+import { Table, Th, Td } from "../../components/ui/Table.jsx";
+import Badge from "../../components/ui/Badge.jsx";
+import EmptyState from "../../components/ui/EmptyState.jsx";
+import Skeleton from "../../components/ui/Skeleton.jsx";
 
 export default function Applications() {
   const [applications, setApplications] = useState([]);
@@ -17,31 +21,33 @@ export default function Applications() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <Spinner />;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
-
   return (
     <div>
-      <h1>Student Applications</h1>
-      {applications.length === 0 ? (
-        <EmptyState message="No applications assigned to you yet." />
-      ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr><th align="left">Student</th><th align="left">Employer</th><th align="left">Status</th><th></th></tr>
-          </thead>
-          <tbody>
-            {applications.map((a) => (
-              <tr key={a.id} style={{ borderTop: "1px solid #e5e7eb" }}>
-                <td>{a.student?.name}</td>
-                <td>{a.employer?.companyName}</td>
-                <td><StatusBadge status={a.status} /></td>
-                <td><Link to={`/coordinator/applications/${a.id}`}>Open →</Link></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <PageHeader title="Student Applications" subtitle="Applications assigned to you for review." />
+      <Card>
+        {loading ? <Skeleton className="h-40" /> : error ? (
+          <p className="text-sm text-danger">{error}</p>
+        ) : applications.length === 0 ? (
+          <EmptyState icon={FileText} title="No applications assigned" message="An administrator assigns applications to coordinators. They will appear here." />
+        ) : (
+          <Table>
+            <thead><tr><Th>Student</Th><Th>Employer</Th><Th>Status</Th><Th> </Th></tr></thead>
+            <tbody>
+              {applications.map((a) => (
+                <tr key={a.id}>
+                  <Td>
+                    <p className="font-medium">{a.student?.name}</p>
+                    <p className="text-xs text-muted">{a.student?.course}</p>
+                  </Td>
+                  <Td>{a.employer?.companyName}</Td>
+                  <Td><Badge status={a.status} /></Td>
+                  <Td className="text-right"><Link to={`/coordinator/applications/${a.id}`} className="text-primary font-medium hover:underline">Review</Link></Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card>
     </div>
   );
 }

@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { getMyProfile, updateMyProfile } from "../../api/students.api.js";
-import Button from "../../components/common/Button.jsx";
-import Spinner from "../../components/common/Spinner.jsx";
-import Toast from "../../components/common/Toast.jsx";
+import PageHeader from "../../components/ui/PageHeader.jsx";
+import { Card } from "../../components/ui/Card.jsx";
+import { Field, Input } from "../../components/ui/Input.jsx";
+import Button from "../../components/ui/Button.jsx";
+import Skeleton from "../../components/ui/Skeleton.jsx";
+import Toast from "../../components/ui/Toast.jsx";
 
 export default function Profile() {
   const [loading, setLoading] = useState(true);
@@ -27,34 +30,30 @@ export default function Profile() {
     }
   };
 
-  if (loading) return <Spinner />;
+  if (loading) return <Skeleton className="h-96 max-w-xl" />;
 
   return (
-    <div style={{ maxWidth: 420 }}>
-      <h1>Profile</h1>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Name</label>
-          <input {...register("name", { required: "Name is required" })} style={{ width: "100%", padding: "0.5rem" }} />
-          {errors.name && <p style={{ color: "red" }}>{errors.name.message}</p>}
-        </div>
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Phone</label>
-          <input {...register("phone", { required: "Phone is required" })} style={{ width: "100%", padding: "0.5rem" }} />
-          {errors.phone && <p style={{ color: "red" }}>{errors.phone.message}</p>}
-        </div>
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Course</label>
-          <input {...register("course", { required: "Course is required" })} style={{ width: "100%", padding: "0.5rem" }} />
-          {errors.course && <p style={{ color: "red" }}>{errors.course.message}</p>}
-        </div>
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Year Level</label>
-          <input type="number" min={1} max={6} {...register("yearLevel", { required: "Year level is required" })} style={{ width: "100%", padding: "0.5rem" }} />
-          {errors.yearLevel && <p style={{ color: "red" }}>{errors.yearLevel.message}</p>}
-        </div>
-        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving…" : "Save"}</Button>
-      </form>
+    <div>
+      <PageHeader title="Profile" subtitle="Keep your details up to date. You need a complete profile to apply." />
+      <Card className="max-w-xl">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Field label="Full name" required error={errors.name?.message}>
+            <Input {...register("name", { required: "Name is required" })} />
+          </Field>
+          <Field label="Phone number" required error={errors.phone?.message}>
+            <Input placeholder="09171234567" {...register("phone", { required: "Phone is required" })} />
+          </Field>
+          <Field label="Course" required error={errors.course?.message}>
+            <Input placeholder="BS Information Technology" {...register("course", { required: "Course is required" })} />
+          </Field>
+          <Field label="Year level" required error={errors.yearLevel?.message}>
+            <Input type="number" min={1} max={6} {...register("yearLevel", { required: "Year level is required" })} />
+          </Field>
+          <div className="flex justify-end pt-2">
+            <Button type="submit" loading={isSubmitting}>Save changes</Button>
+          </div>
+        </form>
+      </Card>
       <Toast {...toast} onClose={() => setToast(null)} />
     </div>
   );

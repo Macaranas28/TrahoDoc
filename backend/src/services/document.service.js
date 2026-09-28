@@ -11,6 +11,7 @@ import {
   AUDIT_ACTIONS,
   AUDIT_MODULES,
   DOCUMENT_STATUS,
+  NOTIFICATION_CATEGORIES,
   REQUIREMENT_TARGET,
   ROLES,
 } from "../utils/constants.js";

@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
+import { Users, Check, X } from "lucide-react";
 import { getEmployerApplications, respondToApplication } from "../../api/applications.api.js";
-import Button from "../../components/common/Button.jsx";
-import StatusBadge from "../../components/common/StatusBadge.jsx";
-import Spinner from "../../components/common/Spinner.jsx";
-import EmptyState from "../../components/common/EmptyState.jsx";
-import Toast from "../../components/common/Toast.jsx";
+import PageHeader from "../../components/ui/PageHeader.jsx";
+import { Card } from "../../components/ui/Card.jsx";
+import { Table, Th, Td } from "../../components/ui/Table.jsx";
+import Badge from "../../components/ui/Badge.jsx";
+import Button from "../../components/ui/Button.jsx";
+import EmptyState from "../../components/ui/EmptyState.jsx";
+import Skeleton from "../../components/ui/Skeleton.jsx";
+import Toast from "../../components/ui/Toast.jsx";
 
 export default function Applications() {
   const [applications, setApplications] = useState([]);
@@ -28,38 +32,39 @@ export default function Applications() {
     }
   };
 
-  if (loading) return <Spinner />;
-
   return (
     <div>
-      <h1>Applications</h1>
-      {applications.length === 0 ? (
-        <EmptyState message="No applications yet." />
-      ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr><th align="left">Student</th><th align="left">Course</th><th align="left">Status</th><th align="left">Response</th><th></th></tr>
-          </thead>
-          <tbody>
-            {applications.map((a) => (
-              <tr key={a.id} style={{ borderTop: "1px solid #e5e7eb" }}>
-                <td>{a.student.name}</td>
-                <td>{a.student.course}</td>
-                <td><StatusBadge status={a.status} /></td>
-                <td>{a.employerResponse?.status !== "Pending" ? <StatusBadge status={a.employerResponse.status} /> : "—"}</td>
-                <td>
-                  {a.status === "Approved" && a.employerResponse?.status === "Pending" && (
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <Button onClick={() => respond(a.id, "Accepted")}>Accept</Button>
-                      <Button variant="danger" onClick={() => respond(a.id, "Declined")}>Decline</Button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <PageHeader title="Applications" subtitle="Students who applied to your company. You can respond once a coordinator approves." />
+      <Card>
+        {loading ? <Skeleton className="h-40" /> : applications.length === 0 ? (
+          <EmptyState icon={Users} title="No applications yet" message="Applications from students will appear here." />
+        ) : (
+          <Table>
+            <thead><tr><Th>Student</Th><Th>Course</Th><Th>Status</Th><Th>Your response</Th><Th> </Th></tr></thead>
+            <tbody>
+              {applications.map((a) => {
+                const canRespond = a.status === "Approved" && a.employerResponse?.status === "Pending";
+                return (
+                  <tr key={a.id}>
+                    <Td className="font-medium">{a.student.name}</Td>
+                    <Td className="text-muted">{a.student.course}</Td>
+                    <Td><Badge status={a.status} /></Td>
+                    <Td>{a.employerResponse?.status !== "Pending" ? <Badge status={a.employerResponse.status === "Accepted" ? "Approved" : "Rejected"} /> : <span className="text-muted">—</span>}</Td>
+                    <Td className="text-right">
+                      {canRespond && (
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" icon={Check} onClick={() => respond(a.id, "Accepted")}>Accept</Button>
+                          <Button size="sm" variant="danger" icon={X} onClick={() => respond(a.id, "Declined")}>Decline</Button>
+                        </div>
+                      )}
+                    </Td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        )}
+      </Card>
       <Toast {...toast} onClose={() => setToast(null)} />
     </div>
   );

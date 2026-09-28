@@ -1,47 +1,103 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getMyApplications } from "../../api/applications.api.js";
+import { FileText, Folder, CheckCircle2, Bell, ArrowRight } from "lucide-react";
+import { useAuth } from "../../context/AuthContext.jsx";
+import { getMyApplications, getApplication } from "../../api/applications.api.js";
 import { getNotifications } from "../../api/notifications.api.js";
-import StatusBadge from "../../components/common/StatusBadge.jsx";
-import Spinner from "../../components/common/Spinner.jsx";
-import EmptyState from "../../components/common/EmptyState.jsx";
+import PageHeader from "../../components/ui/PageHeader.jsx";
+import StatCard from "../../components/ui/StatCard.jsx";
+import { Card, CardHeader } from "../../components/ui/Card.jsx";
+import Badge from "../../components/ui/Badge.jsx";
+import Button from "../../components/ui/Button.jsx";
+import Skeleton from "../../components/ui/Skeleton.jsx";
+
+// Tells the student the single most useful next step
+const nextStep = (app, counts) => {
+  if (!app) return { text: "Start by choosing an accredited employer and creating your OJT application.", to: "/student/application", label: "Create Application" };
+  if (["Draft", "Needs Revision"].includes(app.status)) {
+    return counts.missing > 0
+      ? { text: `You still have ${counts.missing} document(s) to upload before you can submit.`, to: "/student/tracking", label: "Upload Documents" }
+      : { text: "All documents uploaded. You can submit your application now.", to: "/student/application", label: "Submit Application" };
+  }
+  if (app.status === "Approved") return { text: "Your application was approved. Wait for the employer's response.", to: "/student/tracking", label: "View Tracking" };
+  return { text: "Your application is being reviewed. We'll notify you of any update.", to: "/student/tracking", label: "View Tracking" };
+};
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [application, setApplication] = useState(null);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [detail, setDetail] = useState(null);
+  const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getMyApplications(), getNotifications({ limit: 1 })]).then(([appsRes, notifRes]) => {
-      setApplication(appsRes.data.data.applications[0] || null);
-      setUnreadCount(notifRes.data.data.unreadCount);
-      setLoading(false);
-    });
+    (async () => {
+      try {
+        const [appsRes, notifRes] = await Promise.all([getMyApplications(), getNotifications({ limit: 1 })]);
+        const apps = appsRes.data.data.applications;
+        const active = apps.find((a) => !["Withdrawn", "Rejected"].includes(a.status)) || apps[0] || null;
+        setApplication(active);
+        setUnread(notifRes.data.data.unreadCount);
+        if (active) setDetail((await getApplication(active.id)).data.data.application);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  if (loading) return <Spinner />;
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24" />)}</div>
+        <Skeleton className="h-40" />
+      </div>
+    );
+  }
+
+  const checklist = detail?.checklist || [];
+  const counts = {
+    total: checklist.length,
+    uploaded: checklist.filter((c) => c.status !== "Missing").length,
+    verified: checklist.filter((c) => c.status === "Verified").length,
+    missing: checklist.filter((c) => c.status === "Missing").length,
+  };
+  const step = nextStep(application, counts);
 
   return (
     <div>
-      <h1>Student Dashboard</h1>
-      <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "1rem", minWidth: 220 }}>
-          <h3>Application</h3>
+      <PageHeader title={`Welcome, ${user?.name?.split(" ")[0]}`} subtitle="Here's where your OJT application stands." />
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard label="Applications" value={application ? 1 : 0} icon={FileText} tone="primary" to="/student/application" />
+        <StatCard label="Documents uploaded" value={`${counts.uploaded}/${counts.total}`} icon={Folder} tone="info" to="/student/tracking" />
+        <StatCard label="Verified" value={counts.verified} icon={CheckCircle2} tone="success" to="/student/tracking" />
+        <StatCard label="Unread notifications" value={unread} icon={Bell} tone="warning" to="/student/notifications" />
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader title="Current OJT Application" />
           {application ? (
-            <>
-              <p>{application.employer.companyName}</p>
-              <StatusBadge status={application.status} />
-            </>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <p className="text-sm text-muted">Employer</p>
+                <p className="text-lg font-semibold">{application.employer.companyName}</p>
+              </div>
+              <Badge status={application.status} />
+            </div>
           ) : (
-            <EmptyState message="No application yet." />
+            <p className="text-sm text-muted">You haven't created an application yet.</p>
           )}
-          <p><Link to="/student/application">Go to Application →</Link></p>
-        </div>
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "1rem", minWidth: 220 }}>
-          <h3>Notifications</h3>
-          <p>{unreadCount} unread</p>
-          <p><Link to="/student/notifications">View Notifications →</Link></p>
-        </div>
+        </Card>
+
+        <Card className="bg-primary-light border-primary/20">
+          <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">Next step</p>
+          <p className="text-sm text-slate-700 mb-4">{step.text}</p>
+          <Link to={step.to}>
+            <Button icon={ArrowRight} size="sm">{step.label}</Button>
+          </Link>
+        </Card>
       </div>
     </div>
   );

@@ -1,57 +1,88 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Users, GraduationCap, Building2, ShieldCheck, Activity } from "lucide-react";
 import { getDashboardSummary } from "../../api/dashboard.api.js";
-import Spinner from "../../components/common/Spinner.jsx";
+import PageHeader from "../../components/ui/PageHeader.jsx";
+import StatCard from "../../components/ui/StatCard.jsx";
+import { Card, CardHeader } from "../../components/ui/Card.jsx";
+import Skeleton from "../../components/ui/Skeleton.jsx";
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDashboardSummary().then((res) => {
-      setSummary(res.data.data);
-      setLoading(false);
-    });
+    getDashboardSummary().then((res) => setSummary(res.data.data)).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <Spinner />;
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24" />)}</div>
+        <Skeleton className="h-64" />
+      </div>
+    );
+  }
+
+  const { userCounts } = summary;
 
   return (
     <div>
-      <h1>Admin Dashboard</h1>
+      <PageHeader title="Admin Dashboard" subtitle="System overview and recent activity." />
 
-      <h3>Users</h3>
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-        {Object.entries(summary.userCounts).map(([role, count]) => (
-          <div key={role} style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "1rem", minWidth: 140 }}>
-            <p style={{ textTransform: "capitalize", margin: 0, color: "#6b7280" }}>{role}s</p>
-            <p style={{ fontSize: "1.75rem", margin: "0.25rem 0" }}>{count}</p>
-          </div>
-        ))}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard label="Students" value={userCounts.student} icon={GraduationCap} tone="primary" to="/admin/users" />
+        <StatCard label="Employers" value={userCounts.employer} icon={Building2} tone="info" to="/admin/users" />
+        <StatCard label="Coordinators" value={userCounts.coordinator} icon={Users} tone="warning" to="/admin/users" />
+        <StatCard label="Admins" value={userCounts.admin} icon={ShieldCheck} tone="success" to="/admin/users" />
       </div>
-      <p style={{ marginTop: "0.5rem" }}><Link to="/admin/users">Manage Users →</Link></p>
 
-      <h3 style={{ marginTop: "2rem" }}>System</h3>
-      <p>Total applications: {summary.totalApplications}</p>
-      <p>Total employers: {summary.totalEmployers} ({summary.accreditedEmployers} accredited)</p>
+      <div className="grid lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader
+            title="Recent activity"
+            subtitle={`${summary.activityLast24h} events in the last 24 hours`}
+            action={<Link to="/admin/audit-logs" className="text-sm text-primary font-medium hover:underline">View all</Link>}
+          />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase text-muted border-b border-border">
+                  <th className="py-2 pr-4 font-medium">Action</th>
+                  <th className="py-2 pr-4 font-medium">Actor</th>
+                  <th className="py-2 pr-4 font-medium">Result</th>
+                  <th className="py-2 font-medium">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.recentActivity.map((a, i) => (
+                  <tr key={i} className="border-b border-border last:border-0">
+                    <td className="py-3 pr-4 font-medium">{a.action}</td>
+                    <td className="py-3 pr-4 text-muted">{a.actor}</td>
+                    <td className="py-3 pr-4">
+                      <span className={a.result === "failure" ? "text-danger font-medium" : "text-success font-medium"}>{a.result}</span>
+                    </td>
+                    <td className="py-3 text-muted whitespace-nowrap">{new Date(a.timestamp).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
 
-      <h3 style={{ marginTop: "2rem" }}>Recent Activity ({summary.activityLast24h} events in last 24h)</h3>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr><th align="left">Action</th><th align="left">Actor</th><th align="left">Result</th><th align="left">Time</th></tr>
-        </thead>
-        <tbody>
-          {summary.recentActivity.map((a, i) => (
-            <tr key={i} style={{ borderTop: "1px solid #e5e7eb" }}>
-              <td>{a.action}</td>
-              <td>{a.actor}</td>
-              <td style={{ color: a.result === "failure" ? "#dc2626" : "#16a34a" }}>{a.result}</td>
-              <td>{new Date(a.timestamp).toLocaleString()}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p style={{ marginTop: "0.5rem" }}><Link to="/admin/audit-logs">View Full Audit Log →</Link></p>
+        <Card>
+          <CardHeader title="System" />
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between"><dt className="text-muted">Total applications</dt><dd className="font-semibold">{summary.totalApplications}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted">Total employers</dt><dd className="font-semibold">{summary.totalEmployers}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted">Accredited employers</dt><dd className="font-semibold text-success">{summary.accreditedEmployers}</dd></div>
+          </dl>
+          <div className="mt-5 pt-4 border-t border-border flex items-center gap-2 text-xs text-muted">
+            <Activity className="h-4 w-4" /> Audit logs are read-only and cannot be edited.
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

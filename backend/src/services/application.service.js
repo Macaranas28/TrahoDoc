@@ -1,9 +1,10 @@
-import { requireEmployerRecord } from "./employer.service.js";  
+import { requireEmployerRecord } from "./employer.service.js";
 import Application from "../models/Application.js";
 import Employer from "../models/Employer.js";
 import Requirement from "../models/Requirement.js";
+import Document from "../models/Document.js";
 import ApiError from "../utils/ApiError.js";
-import { canViewApplication } from "../utils/access.js";
+import { canViewApplication, isSameId } from "../utils/access.js";
 import {
   ACCREDITATION_STATUS,
   ACTIVE_APPLICATION_STATUSES,
@@ -21,8 +22,6 @@ import {
 import { logAction } from "./audit.service.js";
 import { notifyUser } from "./notification.service.js";
 import { isProfileComplete } from "./student.service.js";
-import { DOCUMENT_STATUS } from "../utils/constants.js"; // add to the existing constants import instead — see note
-import Document from "../models/Document.js";
 
 const DETAIL_POPULATE = [
   { path: "employerId", select: "companyName" },
@@ -231,6 +230,16 @@ const findAssignedApplication = async (user, id) => {
   return application;
 };
 
+// Also move an application to "Under Review" the first time a coordinator opens it (Submitted -> Under Review)
+export const markUnderReviewIfNeeded = async (application) => {
+  if (application.status === APPLICATION_STATUS.SUBMITTED) {
+    application.status = APPLICATION_STATUS.UNDER_REVIEW;
+    application.statusHistory.push({ status: APPLICATION_STATUS.UNDER_REVIEW });
+    await application.save();
+  }
+  return application;
+};
+
 export const getCoordinatorApplication = async ({ user, id }) => {
   const application = await findAssignedApplication(user, id);
   await markUnderReviewIfNeeded(application);
@@ -276,13 +285,3 @@ export const changeApplicationStatus = async ({ user, id, status, remarks, req }
   });
   return application;
 };
-
-// Also move an application to "Under Review" the first time a coordinator opens it (Submitted -> Under Review)
-export const markUnderReviewIfNeeded = async (application) => {
-  if (application.status === APPLICATION_STATUS.SUBMITTED) {
-    application.status = APPLICATION_STATUS.UNDER_REVIEW;
-    application.statusHistory.push({ status: APPLICATION_STATUS.UNDER_REVIEW });
-    await application.save();
-  }
-  return application;
-};F

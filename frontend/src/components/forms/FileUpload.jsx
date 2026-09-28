@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
-import Button from "../common/Button.jsx";
+import { Upload } from "lucide-react";
+import Button from "../ui/Button.jsx";
 
 const ACCEPTED = ".pdf,.jpg,.jpeg,.png";
 const MAX_BYTES = 5 * 1024 * 1024;
 
-// Controlled, reusable: the parent decides what "upload" means (create vs replace)
 export default function FileUpload({ label = "Upload", onUpload, disabled }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -12,17 +12,13 @@ export default function FileUpload({ label = "Upload", onUpload, disabled }) {
 
   const handleChange = async (e) => {
     const file = e.target.files?.[0];
-    e.target.value = ""; // allows re-selecting the same file name later
+    e.target.value = "";
     if (!file) return;
 
     setError("");
-    if (file.size > MAX_BYTES) {
-      setError("File is too large. Maximum size is 5 MB.");
-      return;
-    }
+    if (file.size > MAX_BYTES) return setError("File is too large. Maximum size is 5 MB.");
     if (!["application/pdf", "image/jpeg", "image/png"].includes(file.type)) {
-      setError("Only PDF, JPG, and PNG files are allowed.");
-      return;
+      return setError("Only PDF, JPG, and PNG files are allowed.");
     }
 
     setBusy(true);
@@ -37,23 +33,11 @@ export default function FileUpload({ label = "Upload", onUpload, disabled }) {
 
   return (
     <div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept={ACCEPTED}
-        onChange={handleChange}
-        style={{ display: "none" }}
-        disabled={disabled || busy}
-      />
-      <Button
-        type="button"
-        variant="secondary"
-        disabled={disabled || busy}
-        onClick={() => inputRef.current.click()}
-      >
+      <input ref={inputRef} type="file" accept={ACCEPTED} onChange={handleChange} className="hidden" disabled={disabled || busy} />
+      <Button type="button" variant="secondary" size="sm" icon={Upload} loading={busy} disabled={disabled} onClick={() => inputRef.current.click()}>
         {busy ? "Uploading…" : label}
       </Button>
-      {error && <p style={{ color: "red", fontSize: "0.85rem", marginTop: "0.25rem" }}>{error}</p>}
+      {error && <p className="text-xs text-danger mt-1">{error}</p>}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { authenticator } from "otplib";
+import { generateSecret, generate, verify, generateURI } from "otplib";
 import QRCode from "qrcode";
 import crypto from "node:crypto";
 import bcrypt from "bcrypt";
@@ -9,18 +9,19 @@ import { AUTH, MFA, AUDIT_ACTIONS, AUDIT_MODULES } from "../utils/constants.js";
 import { logAction } from "./audit.service.js";
 import { notifyUser } from "./notification.service.js";
 
-authenticator.options = { window: 1 }; // allow the code from 1 step before/after, for clock drift
-
 const generateBackupCodes = () =>
-  Array.from({ length: MFA.BACKUP_CODE_COUNT }, () => crypto.randomBytes(5).toString("hex")); // 10-char codes
+  Array.from({ length: MFA.BACKUP_CODE_COUNT }, () => crypto.randomBytes(5).toString("hex"));
+
+// otplib v13's verify() is async and allows a small time-drift window via digits/step options.
+// window: 1 = accept the code from one 30-second step before/after, same tolerance as before.
+const verifyTotp = (token, secret) => verify({ secret, token, window: 1 });
 
 // Step 1: generate a NEW secret and QR code, but don't save it yet — see the flow explanation above
 export const startMfaSetup = async ({ user, req }) => {
-  const secret = authenticator.generateSecret();
-  const otpauthUrl = authenticator.keyuri(user.email, MFA.ISSUER, secret);
+  const secret = generateSecret();
+  const otpauthUrl = generateURI({ secret, issuer: MFA.ISSUER, label: user.email });
   const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
 
-  // Temporarily store the unconfirmed secret so /confirm can check against it
   await User.updateOne({ _id: user._id }, { $set: { mfaSecret: secret } });
 
   await logAction({
@@ -35,7 +36,7 @@ export const confirmMfaSetup = async ({ user, code, req }) => {
   const fresh = await User.findById(user._id).select("+mfaSecret");
   if (!fresh.mfaSecret) throw ApiError.badRequest("No MFA setup in progress. Start setup first.");
 
-  const isValid = authenticator.verify({ token: code, secret: fresh.mfaSecret });
+  const isValid = await verifyTotp(code, fresh.mfaSecret);
   if (!isValid) throw ApiError.badRequest("Invalid code. Please check your authenticator app and try again.");
 
   const backupCodes = generateBackupCodes();
@@ -52,7 +53,7 @@ export const confirmMfaSetup = async ({ user, code, req }) => {
     message: "Two-factor authentication was enabled on your account.",
   });
 
-  return backupCodes; // shown to the user ONCE — we only ever store hashes from here on
+  return backupCodes;
 };
 
 export const disableMfa = async ({ user, currentPassword, req }) => {
@@ -87,7 +88,7 @@ export const completeMfaLogin = async ({ mfaToken, code, req }) => {
   const user = await User.findOne({ _id: payload.sub, tokenVersion: payload.tv }).select("+mfaSecret +mfaBackupCodes");
   if (!user || !user.mfaEnabled) throw ApiError.unauthorized();
 
-  const isTotpValid = authenticator.verify({ token: code, secret: user.mfaSecret });
+  const isTotpValid = await verifyTotp(code, user.mfaSecret);
 
   if (isTotpValid) {
     await logAction({
@@ -97,10 +98,9 @@ export const completeMfaLogin = async ({ mfaToken, code, req }) => {
     return { user, token: signToken(user) };
   }
 
-  // Not a valid TOTP code — check if it matches (and consumes) a backup code instead
   for (let i = 0; i < user.mfaBackupCodes.length; i++) {
     if (await bcrypt.compare(code, user.mfaBackupCodes[i])) {
-      user.mfaBackupCodes.splice(i, 1); // one-time use: remove it immediately
+      user.mfaBackupCodes.splice(i, 1);
       await user.save();
 
       await logAction({

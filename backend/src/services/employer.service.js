@@ -10,10 +10,9 @@ import {
   REQUIREMENT_TARGET,
 } from "../utils/constants.js";
 import { logAction } from "./audit.service.js";
+import { notifyUser } from "./notification.service.js";
 import User from "../models/User.js";
-import Document from "../models/Document.js";
 import { detectRiskFlags } from "./riskFlag.service.js";
-import { canViewDocument } from "../utils/access.js"; // not required here, kept for symmetry if needed later
 
 
 // Only the fields a student needs. No email, phone, contact person, or risk flags.
